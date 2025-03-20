@@ -1,0 +1,39 @@
+# 基础配置
+headless: false  # 是否无头模式
+
+# ADS浏览器配置
+ads_api_url: "http://local.adspower.net:50325/api/v1/browser/local-active"
+
+# 任务平台配置
+task_site_url: "https://example-task-site.com"
+
+# 浏览器账号配置
+browser_accounts:
+  # 格式：browser_id: {task_site_account: {username: xxx, password: xxx}, twitter_account: {username: xxx, password: xxx}}
+  # 示例：
+  # "browser_id_1": 
+  #   task_site_account:
+  #     username: "task_user_1"
+  #     password: "task_pw_1"
+  #   twitter_account:
+  #     username: "twitter_user_1"
+  #     password: "twitter_pw_1"
+  # "browser_id_2":
+  #   task_site_account:
+  #     username: "task_user_2"
+  #     password: "task_pw_2"
+  #   twitter_account:
+  #     username: "twitter_user_2"
+  #     password: "twitter_pw_2"
+
+# Twitter配置
+twitter_username: "your_twitter"
+twitter_password: "your_twitter_pw"
+
+# Twitter评论池
+comments_pool:
+  - "Great project!"
+  - "Looking forward to this!"
+  - "Amazing innovation!"
+  - "This is awesome!"
+  - "Can't wait to see more!"
