@@ -2,22 +2,22 @@
 headless: false  # 是否无头模式
 
 # ADS浏览器配置
-ads_api_url: "http://local.adspower.net:50325/api/v1/browser/local-active"
+ads_api_url: "http://127.0.0.1:50325/api/v1/browser/local-active"
 
 # 任务平台配置
-task_site_url: "https://example-task-site.com"
+task_site_url: "https://sosovalue.com/zh/exp"
 
 # 浏览器账号配置
 browser_accounts:
   # 格式：browser_id: {task_site_account: {username: xxx, password: xxx}, twitter_account: {username: xxx, password: xxx}}
   # 示例：
-  # "browser_id_1": 
-  #   task_site_account:
-  #     username: "task_user_1"
-  #     password: "task_pw_1"
-  #   twitter_account:
-  #     username: "twitter_user_1"
-  #     password: "twitter_pw_1"
+  "kuoak4n": 
+     task_site_account:
+       username: "task_user_1"
+       password: "task_pw_1"
+     twitter_account:
+       username: "twitter_user_1"
+       password: "twitter_pw_1"
   # "browser_id_2":
   #   task_site_account:
   #     username: "task_user_2"

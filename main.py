@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.webdriver.chrome.service import Service
 import yaml
 import time
 import logging
@@ -31,7 +32,7 @@ class BrowserManager:
     def __init__(self, config):
         self.config = config
         self.drivers = []
-        self.ads_api_url = config.get('ads_api_url', "http://local.adspower.net:50325/api/v1/browser/local-active")
+        self.ads_api_url = config.get('ads_api_url', "http://127.0.0.1:50325/api/v1/browser/local-active")
         self.browser_accounts = config.get('browser_accounts', {})
         
     def get_active_browsers(self):
@@ -66,7 +67,7 @@ class BrowserManager:
             
             selenium_address = browser_info.get('ws', {}).get('selenium')
             webdriver_path = browser_info.get('webdriver')
-            
+          
             if not selenium_address:
                 logging.error(f"No selenium address found for browser: {browser_info}")
                 return None
@@ -77,7 +78,8 @@ class BrowserManager:
             
             # 如果提供了webdriver路径，使用它
             if webdriver_path:
-                driver = webdriver.Chrome(executable_path=webdriver_path, options=options)
+                service = Service(executable_path=webdriver_path)
+                driver = webdriver.Chrome(service=service, options=options)
             else:
                 driver = webdriver.Chrome(options=options)
             
@@ -118,7 +120,7 @@ class BrowserManager:
 
 class TaskAutomation:
     def __init__(self, config_path='config.yaml'):
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             self.config = yaml.safe_load(f)
         
         self.browser_manager = BrowserManager(self.config)
@@ -129,37 +131,48 @@ class TaskAutomation:
     def login_task_site(self, driver):
         """登录任务平台"""
         logging.info(f"Logging into task platform with driver {id(driver)}")
+        #driver.get()
+
+        # 打开一个新标签页
+        driver.execute_script("window.open('about:blank', '_blank')")
+
+        # 切换到新标签页
+        driver.switch_to.window(driver.window_handles[1])
+
+        task_site_url = self.config['task_site_url']
+        logging.info(f"url is {task_site_url}")
+        # 在新标签页中打开URL
         driver.get(self.config['task_site_url'])
         
-        try:
-            # 获取该浏览器对应的账号配置
-            account_config = driver.account_config['task_site_account']
+        # try:
+        #     # 获取该浏览器对应的账号配置
+        #     account_config = driver.account_config['task_site_account']
             
-            # 等待登录表单加载
-            username_field = WebDriverWait(driver, 20).until(
-                EC.presence_of_element_located((By.ID, 'username')))
+        #     # 等待登录表单加载
+        #     username_field = WebDriverWait(driver, 20).until(
+        #         EC.presence_of_element_located((By.ID, 'username')))
             
-            # 随机延迟输入
-            for char in account_config['username']:
-                username_field.send_keys(char)
-                time.sleep(random.uniform(0.1, 0.3))
+        #     # 随机延迟输入
+        #     for char in account_config['username']:
+        #         username_field.send_keys(char)
+        #         time.sleep(random.uniform(0.1, 0.3))
             
-            password_field = driver.find_element(By.ID, 'password')
-            for char in account_config['password']:
-                password_field.send_keys(char)
-                time.sleep(random.uniform(0.1, 0.3))
+        #     password_field = driver.find_element(By.ID, 'password')
+        #     for char in account_config['password']:
+        #         password_field.send_keys(char)
+        #         time.sleep(random.uniform(0.1, 0.3))
             
-            # 点击登录按钮
-            submit_btn = driver.find_element(By.XPATH, '//button[@type="submit"]')
-            submit_btn.click()
+        #     # 点击登录按钮
+        #     submit_btn = driver.find_element(By.XPATH, '//button[@type="submit"]')
+        #     submit_btn.click()
             
-            # 等待登录成功
-            time.sleep(random.uniform(2, 4))
+             # 等待登录成功
+        time.sleep(random.uniform(2, 4))
             
-            return True
-        except Exception as e:
-            logging.error(f"Login failed: {str(e)}")
-            return False
+        return True
+        # except Exception as e:
+        #     logging.error(f"Login failed: {str(e)}")
+        #     return False
 
     def handle_twitter_actions(self, driver, task_type):
         """处理Twitter相关操作"""
@@ -224,7 +237,7 @@ class TaskAutomation:
     def process_tasks_with_multiple_windows(self, num_windows=15):
         """使用多个窗口处理任务"""
         # 初始化浏览器
-        self.browser_manager.initialize_browsers()
+        #self.browser_manager.initialize_browsers()
         
         try:
             # 为每个窗口创建任务处理线程
