@@ -37,3 +37,29 @@ comments_pool:
   - "Amazing innovation!"
   - "This is awesome!"
   - "Can't wait to see more!"
+
+# 任务类型及对应的Xpath
+task_config:
+  watch: 
+    - "//button[@id=':r6:']"
+    - "//div[@class='task-item']"
+  like: 
+    - "//button[@id=':rs:']"
+    - "//button[@id=':rr:']"
+  comment: 
+    - "//button[@id=':r9:']"
+    - "//button[@id=':ru:']"
+  repost: 
+    - "//button[@id=':r7:']"
+    - "//button[@id=':rq:']"
+  quote: 
+    - "//button[@id=':r8:']"
+    - "//button[@id=':rt:']"
+
+tasks_type：
+  - "watch"
+  - "like"
+  - "comment"
+  - "repost"
+  - "quote"
+

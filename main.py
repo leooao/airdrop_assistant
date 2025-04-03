@@ -34,6 +34,8 @@ class BrowserManager:
         self.drivers = []
         self.ads_api_url = config.get('ads_api_url', "http://127.0.0.1:50325/api/v1/browser/local-active")
         self.browser_accounts = config.get('browser_accounts', {})
+        self.task_type = config.get('task_types', [])
+        self.task_config = config.get('task_config', {})
         
     def get_active_browsers(self):
         """通过ADS API获取已启动的浏览器列表"""
@@ -133,11 +135,11 @@ class TaskAutomation:
         logging.info(f"Logging into task platform with driver {id(driver)}")
         #driver.get()
 
-        # 打开一个新标签页
-        driver.execute_script("window.open('about:blank', '_blank')")
+        # # 打开一个新标签页
+        # driver.execute_script("window.open('about:blank', '_blank')")
 
-        # 切换到新标签页
-        driver.switch_to.window(driver.window_handles[1])
+        # # 切换到新标签页
+        # driver.switch_to.window(driver.window_handles[1])
 
         task_site_url = self.config['task_site_url']
         logging.info(f"url is {task_site_url}")
@@ -195,39 +197,75 @@ class TaskAutomation:
             logging.error(f"Twitter action failed: {str(e)}")
             return False
 
-    def process_single_task(self, driver, task):
+    def process_single_task(self, driver, task_type):
         """处理单个任务"""
         try:
-            task_title = task.find_element(By.CLASS_NAME, 'title').text
-            task_type = self.identify_task_type(task_title)
-            
-            logging.info(f"Processing task: {task_title}")
-            
-            # 点击任务链接
-            task_link = task.find_element(By.TAG_NAME, 'a')
+
+            logging.info(f"Processing task: {task_type}")
+            taskConfig = self.task_config.get(task_type)
+            # 点击任务按钮
+            task_button = self.wait.until(EC.element_to_be_clickable(
+                        (By.XPATH, taskConfig[0])))
             original_window = driver.current_window_handle
-            task_link.click()
+            task_button.click()# 等待倒计时开始
+            # try:
+            #     countdown_element = WebDriverWait(driver, 10).until(
+            #         EC.presence_of_element_located((By.XPATH, '//div[contains(text(), "60")]'))
+            #     )
+            #     logging.info("Countdown started")
+            # except TimeoutException:
+            #     logging.error("Countdown not found")
+            #     return False
             
-            # 切换到新标签页
-            WebDriverWait(driver, 20).until(EC.number_of_windows_to_be(2))
-            new_window = [window for window in driver.window_handles 
-                         if window != original_window][0]
-            driver.switch_to.window(new_window)
+            # 
             
-            # 执行对应操作
-            success = False
-            if 'twitter.com' in driver.current_url:
-                success = self.handle_twitter_actions(driver, task_type)
-            elif 'website' in task_type:
-                success = self.handle_website_visit(driver)
+            # 等待倒计时结束
+            time.sleep(65)  # 等待倒计时结束
             
-            # 关闭当前标签页并切换回原窗口
-            driver.close()
-            driver.switch_to.window(original_window)
+            # 循环尝试验证，直到任务完成
+            max_attempts = 5
+            attempt = 0
+            while attempt < max_attempts:
+                try:
+                    # 查找验证按钮
+                    verify_button = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, taskConfig[1]))
+                    )
+                    
+                    # 点击验证按钮
+                    verify_button.click()
+                    logging.info(f"Clicked verify button, attempt {attempt + 1}")
+                    
+                    # 等待任务按钮消失或倒计时重新开始
+                    try:
+                        task_button = WebDriverWait(driver, 10).until(
+                            EC.element_to_be_clickable((By.XPATH, taskConfig[0]))
+                        )
+                        WebDriverWait(driver, 10).until(
+                            EC.invisibility_of_element(task_button)
+                        )
+                        logging.info("Task completed successfully")
+                        return True
+                    except TimeoutException:
+                        # 如果倒计时重新开始，等待它结束
+                        try:
+                            # countdown_element = WebDriverWait(driver, 10).until(
+                            #     EC.presence_of_element_located((By.XPATH, '//div[contains(text(), "60")]'))
+                            # )
+                            logging.info("Countdown restarted, waiting...")
+                            time.sleep(65)
+                        except TimeoutException:
+                            # 如果倒计时没有重新开始，可能任务已经完成
+                            logging.info("Task might be completed")
+                            return True
+                    
+                except TimeoutException:
+                    logging.error(f"Verify button not found on attempt {attempt + 1}")
+                    return False
+                
+                attempt += 1
             
-            if success:
-                self.complete_task(driver, task)
-                return True
+            logging.error("Max verification attempts reached")
             return False
             
         except Exception as e:
@@ -260,23 +298,24 @@ class TaskAutomation:
             # 登录
             if not self.login_task_site(driver):
                 return
-            
-            # 获取任务列表
-            tasks = WebDriverWait(driver, 20).until(
-                EC.presence_of_all_elements_located((By.XPATH, '//div[@class="task-item"]'))
-            )
-            
-            for task in tasks:
+            for task_type in self.task_type:
                 try:
-                    success = self.process_single_task(driver, task)
-                    with self.lock:
-                        self.results.append({
-                            'task': task.find_element(By.CLASS_NAME, 'title').text,
-                            'success': success
-                        })
+                    # 检查任务是否已完成
+                    taskConfig = self.task_config.get(task_type)
+                    taskbtn = self.wait.until(EC.element_to_be_clickable(
+                        (By.XPATH, taskConfig[0])))
+                    if not taskbtn:
+                        logging.info("Task already completed, skipping...")
+                    else:    
+                        success = self.process_single_task(driver, task_type)
+                        with self.lock:
+                            self.results.append({
+                                'task': task_type,
+                                'success': success
+                            })
                 except Exception as e:
                     logging.error(f"Error processing task: {str(e)}")
-                    continue
+                
                     
         except Exception as e:
             logging.error(f"Window task processing failed: {str(e)}")
@@ -284,14 +323,16 @@ class TaskAutomation:
     def identify_task_type(self, task_title):
         """识别任务类型"""
         task_title = task_title.lower()
-        if 'retweet' in task_title or '转发' in task_title:
-            return 'retweet'
+        if 'watch' in task_title or '观看' in task_title:
+            return 'watch'
+        elif 'share' in task_title or '分享' in task_title:
+            return 'share'
+        elif 'quote' in task_title or '引用' in task_title:
+            return 'quote'
+        elif 'reply' in task_title or '回复' in task_title:
+            return 'reply'
         elif 'like' in task_title or '点赞' in task_title:
             return 'like'
-        elif 'comment' in task_title or '评论' in task_title:
-            return 'comment'
-        elif 'visit' in task_title or '访问' in task_title:
-            return 'website'
         return 'unknown'
 
     def handle_website_visit(self, driver):
